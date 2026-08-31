@@ -272,7 +272,7 @@ async function loadData(isInitial){
 
 async function saveData(){
   try{
-    await fetch(`${SUPABASE_URL}/rest/v1/deposit_board`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/deposit_board?on_conflict=id`, {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_ANON_KEY,
@@ -282,6 +282,10 @@ async function saveData(){
       },
       body: JSON.stringify({ id: ROW_ID, data: agents, updated_at: new Date().toISOString() })
     });
+    if(!res.ok){
+      const errText = await res.text();
+      console.error('Save failed:', res.status, errText);
+    }
   }catch(e){
     console.error('Save failed', e);
   }
