@@ -105,6 +105,19 @@
   .row .name{ font-size: 15px; font-weight: 600; margin-bottom: 6px; }
   .row .barwrap{ background: var(--bg); border-radius: 4px; height: 6px; overflow:hidden; }
   .row .bar{ height:100%; background: var(--gold); border-radius: 4px; }
+  .row .bar.over{ background: #97C459; }
+  .row .target-line{ display:flex; align-items:center; gap:6px; margin-top:6px; font-size: 12px; color: var(--cream-dim); }
+  .row .target-line button{
+    background: transparent; border: none; padding: 0; color: var(--cream-dim);
+    font-size: 12px; text-decoration: underline; cursor: pointer;
+  }
+  .row .target-line button:hover{ color: var(--gold-bright); }
+  .row .target-edit{ display:flex; align-items:center; gap:6px; margin-top:6px; }
+  .row .target-edit input{ width: 100px; padding: 4px 8px; font-size: 12px; }
+  .row .target-edit button{
+    background: var(--gold); color:#1A2E1E; border:none; padding: 4px 10px;
+    border-radius: 5px; font-size: 12px; font-weight:600; cursor:pointer;
+  }
   .row .amt{
     font-family: 'IBM Plex Mono', monospace;
     font-size: 17px;
@@ -198,7 +211,7 @@
     <div class="ticker" id="ticker"></div>
   </div>
 
-  <footer>Saved locally to this board — only visible to you, and persists next time you open it.</footer>
+  <footer>Synced across devices via Supabase — anyone with this link can view and log deposits.</footer>
 </div>
 
 <div class="overlay" id="overlay">
@@ -212,9 +225,14 @@
 <canvas id="confetti"></canvas>
 
 <script>
-const STORAGE_KEY = 'deposit-board-data';
+const SUPABASE_URL = 'https://spcxjfamozmnkgowztij.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwY3hqZmFtb3ptbmtnb3d6dGlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxNjU2OTgsImV4cCI6MjEwMzc0MTY5OH0._hKnAK5gLwwLArYLShxTL3Abpv4ZN2LGqz5PKti-Apc';
+const ROW_ID = 'main';
+const DEFAULT_TARGET = 100000;
 let agents = [];
 let selectedMonth = 'all';
+let editingTarget = null;
+let saveIndicatorTimer = null;
 
 function fmt(n){
   return '$' + Math.round(n).toLocaleString('en-US');
@@ -231,20 +249,39 @@ function monthLabel(key){
   return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
 }
 
-async function loadData(){
+async function loadData(isInitial){
   try{
-    const res = await window.storage.get(STORAGE_KEY, false);
-    agents = res ? JSON.parse(res.value) : [];
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/deposit_board?id=eq.${ROW_ID}&select=data`,
+      {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        }
+      }
+    );
+    const rows = await res.json();
+    agents = (rows && rows.length) ? rows[0].data : [];
   }catch(e){
+    console.error('Load failed', e);
     agents = [];
   }
-  selectedMonth = monthKey(Date.now());
+  if(isInitial) selectedMonth = monthKey(Date.now());
   render();
 }
 
 async function saveData(){
   try{
-    await window.storage.set(STORAGE_KEY, JSON.stringify(agents), false);
+    await fetch(`${SUPABASE_URL}/rest/v1/deposit_board`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ id: ROW_ID, data: agents, updated_at: new Date().toISOString() })
+    });
   }catch(e){
     console.error('Save failed', e);
   }
@@ -285,7 +322,10 @@ function render(){
     totalsByAgent[d.name] = (totalsByAgent[d.name] || 0) + d.amount;
   });
   const sorted = Object.entries(totalsByAgent)
-    .map(([name, total]) => ({name, total}))
+    .map(([name, total]) => {
+      const agent = agents.find(a => a.name === name);
+      return { name, total, target: (agent && agent.target) || DEFAULT_TARGET };
+    })
     .sort((a,b)=> b.total - a.total);
 
   const grand = flat.reduce((s,d)=> s + d.amount, 0);
@@ -293,21 +333,56 @@ function render(){
   document.getElementById('grandTotalLabel').textContent =
     selectedMonth === 'all' ? 'Total on the board' : monthLabel(selectedMonth) + ' total';
 
-  const maxTotal = sorted.length ? sorted[0].total : 1;
   const board = document.getElementById('board');
   if(!sorted.length){
     board.innerHTML = '<div class="empty">No deposits logged for this period yet.</div>';
   } else {
-    board.innerHTML = sorted.map((a, i) => `
+    board.innerHTML = sorted.map((a, i) => {
+      const pct = Math.min(100, (a.total / a.target) * 100);
+      const over = a.total >= a.target;
+      const isEditing = editingTarget === a.name;
+      const targetRow = isEditing
+        ? `<div class="target-edit">
+             <input type="number" min="0" step="1" id="targetInput-${i}" value="${a.target}">
+             <button type="button" class="save-target" data-name="${escapeHtml(a.name)}">Save</button>
+           </div>`
+        : `<div class="target-line">
+             <span>${fmt(a.total)} of ${fmt(a.target)} target${over ? ' — reached' : ''}</span>
+             <button type="button" class="edit-target" data-name="${escapeHtml(a.name)}">Edit target</button>
+           </div>`;
+      return `
       <div class="row">
         <div class="rank">${i+1}</div>
         <div class="info">
           <div class="name">${escapeHtml(a.name)}</div>
-          <div class="barwrap"><div class="bar" style="width:${Math.max(4, (a.total/maxTotal)*100)}%"></div></div>
+          <div class="barwrap"><div class="bar ${over ? 'over' : ''}" style="width:${Math.max(4, pct)}%"></div></div>
+          ${targetRow}
         </div>
         <div class="amt">${fmt(a.total)}</div>
       </div>
-    `).join('');
+    `;
+    }).join('');
+
+    board.querySelectorAll('.edit-target').forEach(btn => {
+      btn.addEventListener('click', () => {
+        editingTarget = btn.dataset.name;
+        render();
+      });
+    });
+    board.querySelectorAll('.save-target').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const name = btn.dataset.name;
+        const input = btn.previousElementSibling;
+        const val = parseFloat(input.value);
+        const agent = agents.find(a => a.name === name);
+        if(agent && val >= 0){
+          agent.target = val;
+          await saveData();
+        }
+        editingTarget = null;
+        render();
+      });
+    });
   }
 
   const datalist = document.getElementById('agentList');
@@ -355,7 +430,7 @@ document.getElementById('depositForm').addEventListener('submit', async (e)=>{
 
   let agent = agents.find(a => a.name.toLowerCase() === name.toLowerCase());
   if(!agent){
-    agent = { name, total: 0, deposits: [] };
+    agent = { name, total: 0, deposits: [], target: DEFAULT_TARGET };
     agents.push(agent);
   }
   agent.total += amount;
@@ -485,7 +560,8 @@ function playJingle(big){
   }
 }
 
-loadData();
+loadData(true);
+setInterval(() => loadData(false), 15000);
 </script>
 </body>
 </html>
