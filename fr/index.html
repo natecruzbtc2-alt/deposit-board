@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tableau des dépôts</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --bg: #0F2E1D;
+    --card: #163823;
+    --line: #2A4D37;
+    --gold: #D4A843;
+    --gold-bright: #F0C464;
+    --cream: #F5F0E1;
+    --cream-dim: #B9C4B7;
+    --green: #97C459;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; background: var(--bg); }
+  body{
+    font-family: 'Inter', sans-serif;
+    color: var(--cream);
+    min-height: 100vh;
+    padding: 48px 24px 80px;
+  }
+  .wrap{ max-width: 780px; margin: 0 auto; }
+
+  header{ display:flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
+  h1{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 38px;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .sub{ color: var(--cream-dim); font-size: 14px; margin:0; }
+
+  .month-total{ text-align: right; }
+  .month-total .label{ font-size: 12px; color: var(--cream-dim); margin-bottom: 4px; }
+  .month-total .num{ font-family: 'IBM Plex Mono', monospace; font-size: 34px; font-weight: 600; color: var(--gold-bright); }
+
+  .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 24px; }
+  .tab{
+    background: var(--card); border: 1px solid var(--line); color: var(--cream-dim);
+    padding: 8px 16px; border-radius: 20px; font-size: 13px; cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+  .tab:hover{ border-color: var(--gold); }
+  .tab.active{ background: var(--gold); color: #1A2E1E; border-color: var(--gold); font-weight: 600; }
+
+  .board{ display:flex; flex-direction:column; gap: 12px; }
+  .row{
+    display:flex; align-items:center; gap:18px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 22px;
+  }
+  .rank{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    color: var(--cream-dim);
+    width: 24px;
+  }
+  .row .info{ flex: 1; min-width: 0; }
+  .row .name{ font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .row .barwrap{ background: var(--bg); border-radius: 5px; height: 8px; overflow:hidden; }
+  .row .bar{ height:100%; background: var(--gold); border-radius: 5px; }
+  .row .bar.over{ background: var(--green); }
+  .row .target-line{ font-size: 12px; color: var(--cream-dim); margin-top: 8px; }
+  .row .amt{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--gold-bright);
+    white-space: nowrap;
+  }
+
+  .empty{ color: var(--cream-dim); font-size: 14px; padding: 40px 0; text-align:center; }
+
+  footer{ margin-top: 36px; font-size: 12px; color: var(--cream-dim); text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Tableau des dépôts</h1>
+      <p class="sub">Classement de ce mois.</p>
+    </div>
+    <div class="month-total">
+      <div class="label" id="grandTotalLabel">Total du tableau</div>
+      <div class="num" id="grandTotal">$0</div>
+    </div>
+  </header>
+
+  <div class="tabs" id="monthTabs"></div>
+
+  <div class="board" id="board"></div>
+
+  <footer>Mise à jour automatique.</footer>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://spcxjfamozmnkgowztij.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwY3hqZmFtb3ptbmtnb3d6dGlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxNjU2OTgsImV4cCI6MjEwMzc0MTY5OH0._hKnAK5gLwwLArYLShxTL3Abpv4ZN2LGqz5PKti-Apc';
+const ROW_ID = 'main';
+const DEFAULT_TARGET = 100000;
+let agents = [];
+let selectedMonth = 'all';
+
+function fmt(n){
+  return '$' + Math.round(n).toLocaleString('en-US');
+}
+
+function monthKey(ts){
+  const d = new Date(ts);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+
+function monthLabel(key){
+  const [y, m] = key.split('-').map(Number);
+  const d = new Date(y, m-1, 1);
+  return d.toLocaleString('fr-FR', { month: 'long', year: 'numeric' });
+}
+
+async function loadData(isInitial){
+  try{
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/deposit_board?id=eq.${ROW_ID}&select=data`,
+      {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        }
+      }
+    );
+    const rows = await res.json();
+    agents = (rows && rows.length) ? rows[0].data : [];
+  }catch(e){
+    console.error('Load failed', e);
+    agents = [];
+  }
+  if(isInitial) selectedMonth = monthKey(Date.now());
+  render();
+}
+
+function allDepositsFlat(){
+  const list = [];
+  agents.forEach(a => a.deposits.forEach(d => list.push({name:a.name, ...d})));
+  return list;
+}
+
+function renderTabs(){
+  const flat = allDepositsFlat();
+  const keys = Array.from(new Set(flat.map(d => monthKey(d.ts))));
+  const currentKey = monthKey(Date.now());
+  if(!keys.includes(currentKey)) keys.push(currentKey);
+  keys.sort().reverse();
+
+  const tabsEl = document.getElementById('monthTabs');
+  const buttons = keys.map(k => `<button type="button" class="tab ${k===selectedMonth?'active':''}" data-month="${k}">${monthLabel(k)}</button>`);
+  buttons.push(`<button type="button" class="tab ${selectedMonth==='all'?'active':''}" data-month="all">Depuis toujours</button>`);
+  tabsEl.innerHTML = buttons.join('');
+  tabsEl.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedMonth = btn.dataset.month;
+      render();
+    });
+  });
+}
+
+function escapeHtml(s){
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+function render(){
+  renderTabs();
+
+  const flat = allDepositsFlat().filter(d => selectedMonth === 'all' || monthKey(d.ts) === selectedMonth);
+
+  const totalsByAgent = {};
+  flat.forEach(d => {
+    totalsByAgent[d.name] = (totalsByAgent[d.name] || 0) + d.amount;
+  });
+  const sorted = Object.entries(totalsByAgent)
+    .map(([name, total]) => {
+      const agent = agents.find(a => a.name === name);
+      return { name, total, target: (agent && agent.target) || DEFAULT_TARGET };
+    })
+    .sort((a,b)=> b.total - a.total);
+
+  const grand = flat.reduce((s,d)=> s + d.amount, 0);
+  document.getElementById('grandTotal').textContent = fmt(grand);
+  document.getElementById('grandTotalLabel').textContent =
+    selectedMonth === 'all' ? 'Total du tableau' : monthLabel(selectedMonth) + ' — total';
+
+  const board = document.getElementById('board');
+  if(!sorted.length){
+    board.innerHTML = '<div class="empty">Aucun dépôt enregistré pour cette période.</div>';
+    return;
+  }
+
+  board.innerHTML = sorted.map((a, i) => {
+    const pct = Math.min(100, (a.total / a.target) * 100);
+    const over = a.total >= a.target;
+    return `
+      <div class="row">
+        <div class="rank">${i+1}</div>
+        <div class="info">
+          <div class="name">${escapeHtml(a.name)}</div>
+          <div class="barwrap"><div class="bar ${over ? 'over' : ''}" style="width:${Math.max(4, pct)}%"></div></div>
+          <div class="target-line">${fmt(a.total)} sur objectif de ${fmt(a.target)}${over ? ' — atteint' : ''}</div>
+        </div>
+        <div class="amt">${fmt(a.total)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+loadData(true);
+setInterval(() => loadData(false), 15000);
+</script>
+</body>
+</html>
