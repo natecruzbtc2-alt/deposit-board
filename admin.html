@@ -281,7 +281,7 @@ async function loadData(isInitial){
     console.error('Load failed', e);
     agents = [];
   }
-  if(isInitial) selectedMonth = monthKey(Date.now());
+  if(isInitial) selectedMonth = 'all';
   render();
 }
 
