@@ -2,103 +2,167 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Deposit Board</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
-
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
   :root{
-    --bg: #0F2E1D;
-    --card: #163823;
-    --line: #2A4D37;
-    --gold: #D4A843;
-    --gold-bright: #F0C464;
-    --cream: #F5F0E1;
-    --cream-dim: #B9C4B7;
-    --green: #97C459;
+    --text: rgba(255,255,255,0.96); --text-2: rgba(255,255,255,0.62); --text-3: rgba(255,255,255,0.40);
+    --stroke: rgba(255,255,255,0.14); --stroke-2: rgba(255,255,255,0.08);
+    --gold-1:#FFF1C9; --gold-2:#F3CF7A; --gold-3:#C99A3E; --green:#7FE3A6; --red:#FF7A7A;
+    --radius-xl:32px; --radius-lg:22px; --radius-md:16px;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Helvetica Neue", sans-serif;
   }
-  *{ box-sizing: border-box; }
-  html,body{ margin:0; padding:0; background: var(--bg); }
-  body{
-    font-family: 'Inter', sans-serif;
-    color: var(--cream);
-    min-height: 100vh;
-    padding: 48px 24px 80px;
-  }
-  .wrap{ max-width: 780px; margin: 0 auto; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:var(--font); color:var(--text); background:#07080C; min-height:100vh; -webkit-font-smoothing:antialiased; padding:56px 24px 96px; overflow-x:hidden; }
 
-  header{ display:flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
-  h1{
-    font-family: 'Fraunces', serif;
-    font-weight: 600;
-    font-size: 38px;
-    margin: 0 0 4px;
-    letter-spacing: -0.01em;
-  }
-  .sub{ color: var(--cream-dim); font-size: 14px; margin:0; }
+  .ambient{ position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; background: radial-gradient(120% 80% at 50% -10%, #1A1C26 0%, #07080C 60%); }
+  .orb{ position:absolute; border-radius:50%; filter:blur(90px); opacity:.55; animation: drift 28s ease-in-out infinite alternate; }
+  .orb.a{ width:640px; height:640px; left:-160px; top:-140px; background: radial-gradient(circle, #C99A3E 0%, transparent 70%); }
+  .orb.b{ width:560px; height:560px; right:-180px; top:160px; background: radial-gradient(circle, #3B4BD8 0%, transparent 70%); animation-delay:-9s; opacity:.42; }
+  .orb.c{ width:520px; height:520px; left:30%; bottom:-260px; background: radial-gradient(circle, #1E8F7A 0%, transparent 70%); animation-delay:-17s; opacity:.38; }
+  @keyframes drift{ 0%{ transform:translate3d(0,0,0) scale(1);} 100%{ transform:translate3d(60px,40px,0) scale(1.12);} }
+  .grain{ position:absolute; inset:0; opacity:.05; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
 
-  .month-total{ text-align: right; }
-  .month-total .label{ font-size: 12px; color: var(--cream-dim); margin-bottom: 4px; }
-  .month-total .num{ font-family: 'IBM Plex Mono', monospace; font-size: 34px; font-weight: 600; color: var(--gold-bright); }
+  .wrap{ max-width:980px; margin:0 auto; }
+  .glass{ background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04)); border:1px solid var(--stroke); border-radius:var(--radius-xl);
+    backdrop-filter: blur(40px) saturate(170%); -webkit-backdrop-filter: blur(40px) saturate(170%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(255,255,255,0.03), 0 30px 80px rgba(0,0,0,0.45); }
 
-  .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 24px; }
-  .tab{
-    background: var(--card); border: 1px solid var(--line); color: var(--cream-dim);
-    padding: 8px 16px; border-radius: 20px; font-size: 13px; cursor: pointer;
-    font-family: 'Inter', sans-serif;
-  }
-  .tab:hover{ border-color: var(--gold); }
-  .tab.active{ background: var(--gold); color: #1A2E1E; border-color: var(--gold); font-weight: 600; }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:28px; flex-wrap:wrap; }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .mark{ width:40px; height:40px; border-radius:12px; display:grid; place-items:center; background: linear-gradient(145deg, var(--gold-1), var(--gold-3)); color:#2A1E07; font-weight:700; font-size:19px; box-shadow: 0 8px 24px rgba(201,154,62,.35), inset 0 1px 0 rgba(255,255,255,.6); }
+  .brand h1{ margin:0; font-size:19px; font-weight:600; letter-spacing:-0.01em; }
+  .brand p{ margin:2px 0 0; font-size:13px; color:var(--text-2); }
+  .status{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-2); padding:8px 14px; border-radius:999px; }
+  .dot{ width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 12px var(--green); animation: pulse 2.4s ease-in-out infinite; }
+  .dot.bad{ background:var(--red); box-shadow:0 0 12px var(--red); }
+  @keyframes pulse{ 50%{ opacity:.45; } }
 
-  .board{ display:flex; flex-direction:column; gap: 12px; }
-  .row{
-    display:flex; align-items:center; gap:18px;
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 18px 22px;
-  }
-  .rank{
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 16px;
-    color: var(--cream-dim);
-    width: 24px;
-  }
-  .row .info{ flex: 1; min-width: 0; }
-  .row .name{ font-size: 18px; font-weight: 600; margin-bottom: 8px; }
-  .row .barwrap{ background: var(--bg); border-radius: 5px; height: 8px; overflow:hidden; }
-  .row .bar{ height:100%; background: var(--gold); border-radius: 5px; }
-  .row .bar.over{ background: var(--green); }
-  .row .target-line{ font-size: 12px; color: var(--cream-dim); margin-top: 8px; }
-  .row .amt{
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 22px;
-    font-weight: 600;
-    color: var(--gold-bright);
-    white-space: nowrap;
-  }
+  .hero{ padding:44px 44px 34px; margin-bottom:20px; position:relative; overflow:hidden; }
+  .hero::after{ content:""; position:absolute; inset:-1px; border-radius:inherit; pointer-events:none; background: radial-gradient(60% 120% at 100% 0%, rgba(243,207,122,.16), transparent 60%); }
+  .eyebrow{ font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--text-3); font-weight:600; }
+  .hero .big{ font-size: clamp(54px, 10vw, 104px); font-weight:700; letter-spacing:-0.045em; line-height:1; margin:12px 0 6px;
+    background: linear-gradient(180deg, #FFFFFF 0%, var(--gold-1) 35%, var(--gold-2) 70%, var(--gold-3) 100%); -webkit-background-clip:text; background-clip:text; color:transparent; font-variant-numeric: tabular-nums; }
+  .stats{ display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-top:28px; }
+  .stat{ padding:16px 18px; border-radius:var(--radius-md); background:rgba(255,255,255,0.05); border:1px solid var(--stroke-2); }
+  .stat .k{ font-size:12px; color:var(--text-3); margin-bottom:6px; }
+  .stat .v{ font-size:21px; font-weight:600; letter-spacing:-0.02em; font-variant-numeric: tabular-nums; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-  .empty{ color: var(--cream-dim); font-size: 14px; padding: 40px 0; text-align:center; }
+  .tabs{ display:flex; gap:4px; padding:5px; border-radius:999px; margin:0 0 20px; overflow-x:auto; scrollbar-width:none; width:max-content; max-width:100%; }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tab{ appearance:none; border:0; background:transparent; color:var(--text-2); font:500 13px var(--font); padding:9px 16px; border-radius:999px; cursor:pointer; white-space:nowrap; transition:all .25s ease; }
+  .tab:hover{ color:var(--text); background:rgba(255,255,255,0.06); }
+  .tab.active{ color:#1C1406; background: linear-gradient(180deg, var(--gold-1), var(--gold-2)); box-shadow:0 6px 18px rgba(243,207,122,.28); font-weight:600; }
 
-  footer{ margin-top: 36px; font-size: 12px; color: var(--cream-dim); text-align:center; }
+  .grid{ display:grid; grid-template-columns: 1.25fr 1fr; gap:20px; align-items:start; }
+  .panel{ padding:28px; }
+  .panel h2{ font-size:20px; font-weight:600; letter-spacing:-0.02em; margin:0 0 4px; }
+  .panel .hint{ font-size:13px; color:var(--text-3); margin:0 0 20px; }
+
+  /* Podium for top 3 */
+  .podium{ display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin-bottom:14px; }
+  .pod{ padding:20px 16px 18px; border-radius:var(--radius-lg); text-align:center; background:rgba(255,255,255,0.05); border:1px solid var(--stroke-2); position:relative; overflow:hidden; }
+  .pod.p1{ background: linear-gradient(180deg, rgba(243,207,122,.18), rgba(243,207,122,.04)); border-color: rgba(243,207,122,.35); }
+  .pod .medal{ width:42px; height:42px; margin:0 auto 10px; border-radius:50%; display:grid; place-items:center; font-weight:700; font-size:16px; }
+  .pod.p1 .medal{ background:linear-gradient(145deg,#FFF3CF,#D9A848); color:#2A1E07; box-shadow:0 8px 22px rgba(217,168,72,.45); }
+  .pod.p2 .medal{ background:linear-gradient(145deg,#FFFFFF,#A9B0BC); color:#1A1D22; }
+  .pod.p3 .medal{ background:linear-gradient(145deg,#F6C9A4,#A8673A); color:#2A1406; }
+  .pod .n{ font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pod .a{ font-size:20px; font-weight:700; letter-spacing:-0.02em; color:var(--gold-1); margin-top:4px; font-variant-numeric: tabular-nums; }
+  .pod .pct{ font-size:11px; color:var(--text-3); margin-top:4px; }
+
+  .board{ display:flex; flex-direction:column; gap:10px; }
+  .row{ display:flex; align-items:center; gap:16px; padding:16px 18px; border-radius:var(--radius-lg); background:rgba(255,255,255,0.045); border:1px solid var(--stroke-2); transition:background .25s; }
+  .row:hover{ background:rgba(255,255,255,0.075); }
+  .rank{ width:34px; height:34px; flex:none; border-radius:50%; display:grid; place-items:center; font-size:14px; font-weight:600; background:rgba(255,255,255,0.07); color:var(--text-2); }
+  .rank.r1{ background:linear-gradient(145deg,#FFF3CF,#D9A848); color:#2A1E07; }
+  .rank.r2{ background:linear-gradient(145deg,#FFFFFF,#A9B0BC); color:#1A1D22; }
+  .rank.r3{ background:linear-gradient(145deg,#F6C9A4,#A8673A); color:#2A1406; }
+  .row .info{ flex:1; min-width:0; }
+  .row .name{ font-size:16px; font-weight:600; margin-bottom:9px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .barwrap{ background:rgba(255,255,255,0.08); border-radius:999px; height:6px; overflow:hidden; }
+  .bar{ height:100%; border-radius:999px; background:linear-gradient(90deg, var(--gold-3), var(--gold-2), var(--gold-1)); box-shadow:0 0 14px rgba(243,207,122,.5); transition: width .8s cubic-bezier(.2,.8,.2,1); }
+  .bar.over{ background:linear-gradient(90deg,#2FB476,#7FE3A6); box-shadow:0 0 14px rgba(127,227,166,.5); }
+  .target-line{ margin-top:8px; font-size:12px; color:var(--text-3); }
+  .row .amt{ font-size:18px; font-weight:600; letter-spacing:-0.02em; color:var(--gold-1); white-space:nowrap; font-variant-numeric: tabular-nums; }
+
+  .empty{ color:var(--text-3); font-size:14px; padding:28px 0; text-align:center; }
+
+  .day{ margin-top:18px; } .day:first-child{ margin-top:0; }
+  .day-head{ display:flex; justify-content:space-between; align-items:baseline; padding:0 4px 10px; border-bottom:1px solid var(--stroke-2); margin-bottom:6px; gap:8px; }
+  .day-head .d{ font-size:14px; font-weight:600; }
+  .day-head .d span{ color:var(--text-3); font-weight:500; margin-left:6px; }
+  .day-head .t{ font-size:13px; color:var(--gold-1); font-weight:600; font-variant-numeric: tabular-nums; white-space:nowrap; }
+  .day-head .t small{ color:var(--text-3); font-weight:500; margin-right:8px; }
+  .entry{ display:grid; grid-template-columns: 64px 1fr auto; gap:12px; align-items:center; padding:11px 4px; border-radius:12px; }
+  .entry:hover{ background:rgba(255,255,255,0.04); }
+  .entry .time{ font-size:12px; color:var(--text-3); font-variant-numeric: tabular-nums; }
+  .entry .who{ font-size:14px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .entry .amt{ font-size:14px; font-weight:600; color:var(--gold-1); font-variant-numeric: tabular-nums; }
+  .entry.new{ animation: flash 2.4s ease; }
+  @keyframes flash{ 0%{ background:rgba(243,207,122,.25);} 100%{ background:transparent; } }
+  .more{ display:flex; justify-content:center; margin-top:16px; }
+  .btn-ghost{ appearance:none; cursor:pointer; font:500 13px var(--font); color:var(--text-2); padding:8px 14px; border-radius:999px; background:rgba(255,255,255,0.06); border:1px solid var(--stroke-2); }
+  .btn-ghost:hover{ color:var(--text); background:rgba(255,255,255,0.12); }
+
+  footer{ margin-top:30px; font-size:12px; color:var(--text-3); text-align:center; }
+
+  @media (max-width: 860px){
+    .grid{ grid-template-columns:1fr; }
+    .stats{ grid-template-columns: repeat(2, 1fr); }
+    .hero{ padding:30px 24px 24px; } .panel{ padding:22px; }
+    body{ padding:32px 16px 80px; }
+  }
+  @media (max-width: 520px){
+    .podium{ gap:8px; }
+    .pod{ padding:14px 8px 12px; border-radius:var(--radius-md); }
+    .pod .medal{ width:32px; height:32px; font-size:13px; margin-bottom:8px; }
+    .pod .n{ font-size:13px; } .pod .a{ font-size:15px; } .pod .pct{ font-size:10px; }
+  }
+  @media (prefers-reduced-motion: reduce){ .orb, .dot{ animation:none; } }
 </style>
 </head>
 <body>
+<div class="ambient"><div class="orb a"></div><div class="orb b"></div><div class="orb c"></div><div class="grain"></div></div>
+
 <div class="wrap">
-
-  <header>
-    <div>
-      <h1>Deposit board</h1>
-      <p class="sub">This month's standings.</p>
+  <div class="topbar">
+    <div class="brand">
+      <div class="mark">$</div>
+      <div><h1>Deposit Board</h1><p>Live standings</p></div>
     </div>
-    <div class="month-total">
-      <div class="label" id="grandTotalLabel">Total on the board</div>
-      <div class="num" id="grandTotal">$0</div>
+    <div class="status glass"><span class="dot" id="statusDot"></span><span id="statusText">Connecting…</span></div>
+  </div>
+
+  <section class="hero glass">
+    <div class="eyebrow" id="grandTotalLabel">Total on the board</div>
+    <div class="big" id="grandTotal">$0</div>
+    <div class="stats">
+      <div class="stat"><div class="k">Today</div><div class="v" id="statToday">$0</div></div>
+      <div class="stat"><div class="k">Deposits</div><div class="v" id="statCount">0</div></div>
+      <div class="stat"><div class="k">Largest deposit</div><div class="v" id="statLargest">$0</div></div>
+      <div class="stat"><div class="k">Top agent</div><div class="v" id="statTop">—</div></div>
     </div>
-  </header>
+  </section>
 
-  <div class="tabs" id="monthTabs"></div>
+  <div class="tabs glass" id="monthTabs"></div>
 
-  <div class="board" id="board"></div>
+  <div class="grid">
+    <section class="panel glass">
+      <h2>Leaderboard</h2>
+      <p class="hint">Ranked by total deposits.</p>
+      <div class="podium" id="podium"></div>
+      <div class="board" id="board"></div>
+    </section>
+    <section class="panel glass">
+      <h2>Deposit log</h2>
+      <p class="hint">Every deposit, by date.</p>
+      <div id="log"></div>
+      <div class="more" id="moreWrap" style="display:none;"><button class="btn-ghost" id="moreBtn">Show more days</button></div>
+    </section>
+  </div>
 
   <footer>Updates automatically.</footer>
 </div>
@@ -108,122 +172,153 @@ const SUPABASE_URL = 'https://spcxjfamozmnkgowztij.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwY3hqZmFtb3ptbmtnb3d6dGlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxNjU2OTgsImV4cCI6MjEwMzc0MTY5OH0._hKnAK5gLwwLArYLShxTL3Abpv4ZN2LGqz5PKti-Apc';
 const ROW_ID = 'main';
 const DEFAULT_TARGET = 100000;
+const LOCALE = 'en-US';
 let agents = [];
+let loadedOnce = false;
 let selectedMonth = 'all';
+let daysShown = 10;
+let seenIds = null;
 
-function fmt(n){
-  return '$' + Math.round(n).toLocaleString('en-US');
+function fmt(n){ return '$' + Math.round(n).toLocaleString(LOCALE); }
+function monthKey(ts){ const d = new Date(ts); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+function dayKey(ts){ const d = new Date(ts); return monthKey(ts) + '-' + String(d.getDate()).padStart(2,'0'); }
+function monthLabel(key){ const [y,m] = key.split('-').map(Number); return new Date(y, m-1, 1).toLocaleString(LOCALE, { month:'long', year:'numeric' }); }
+function dayLabel(key){
+  const [y,m,d] = key.split('-').map(Number);
+  const full = new Date(y, m-1, d).toLocaleDateString(LOCALE, { weekday:'short', month:'short', day:'numeric', year:'numeric' });
+  if(key === dayKey(Date.now())) return `Today<span>${full}</span>`;
+  if(key === dayKey(Date.now() - 86400000)) return `Yesterday<span>${full}</span>`;
+  return full;
 }
+function timeLabel(ts){ return new Date(ts).toLocaleTimeString(LOCALE, { hour:'2-digit', minute:'2-digit' }); }
+function escapeHtml(s){ const div = document.createElement('div'); div.textContent = s; return div.innerHTML; }
 
-function monthKey(ts){
-  const d = new Date(ts);
-  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-}
-
-function monthLabel(key){
-  const [y, m] = key.split('-').map(Number);
-  const d = new Date(y, m-1, 1);
-  return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-}
-
-async function loadData(isInitial){
+// Read-only page: never writes. On a failed load it keeps what's on screen.
+async function loadData(){
   try{
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/deposit_board?id=eq.${ROW_ID}&select=data`,
-      {
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-        }
-      }
-    );
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/deposit_board?id=eq.${ROW_ID}&select=data`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }, cache:'no-store'
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
     const rows = await res.json();
-    agents = (rows && rows.length) ? rows[0].data : [];
+    if(!Array.isArray(rows)) throw new Error('Unexpected response');
+    const data = rows.length ? rows[0].data : [];
+    if(!Array.isArray(data)) throw new Error('Unexpected data');
+    data.forEach(a => { if(!Array.isArray(a.deposits)) a.deposits = []; });
+    agents = data; loadedOnce = true;
+    document.getElementById('statusDot').className = 'dot';
+    document.getElementById('statusText').textContent = 'Live · ' + new Date().toLocaleTimeString(LOCALE, {hour:'2-digit', minute:'2-digit'});
   }catch(e){
     console.error('Load failed', e);
-    agents = [];
+    document.getElementById('statusDot').className = 'dot bad';
+    document.getElementById('statusText').textContent = loadedOnce ? 'Reconnecting…' : 'Can’t reach the board';
   }
-  if(isInitial) selectedMonth = monthKey(Date.now());
   render();
 }
 
 function allDepositsFlat(){
   const list = [];
-  agents.forEach(a => a.deposits.forEach(d => list.push({name:a.name, ...d})));
+  agents.forEach(a => a.deposits.forEach(d => list.push({ name:a.name, ...d, id: d.id || String(d.ts) })));
   return list;
 }
 
 function renderTabs(){
-  const flat = allDepositsFlat();
-  const keys = Array.from(new Set(flat.map(d => monthKey(d.ts))));
-  const currentKey = monthKey(Date.now());
-  if(!keys.includes(currentKey)) keys.push(currentKey);
+  const keys = Array.from(new Set(allDepositsFlat().map(d => monthKey(d.ts))));
+  const cur = monthKey(Date.now());
+  if(!keys.includes(cur)) keys.push(cur);
   keys.sort().reverse();
-
-  const tabsEl = document.getElementById('monthTabs');
-  const buttons = keys.map(k => `<button type="button" class="tab ${k===selectedMonth?'active':''}" data-month="${k}">${monthLabel(k)}</button>`);
-  buttons.push(`<button type="button" class="tab ${selectedMonth==='all'?'active':''}" data-month="all">All time</button>`);
-  tabsEl.innerHTML = buttons.join('');
-  tabsEl.querySelectorAll('.tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      selectedMonth = btn.dataset.month;
-      render();
-    });
-  });
-}
-
-function escapeHtml(s){
-  const div = document.createElement('div');
-  div.textContent = s;
-  return div.innerHTML;
+  const el = document.getElementById('monthTabs');
+  el.innerHTML = [`<button type="button" class="tab ${selectedMonth==='all'?'active':''}" data-month="all">All time</button>`]
+    .concat(keys.map(k => `<button type="button" class="tab ${k===selectedMonth?'active':''}" data-month="${k}">${monthLabel(k)}</button>`)).join('');
+  el.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { selectedMonth = b.dataset.month; daysShown = 10; render(); }));
 }
 
 function render(){
   renderTabs();
+  const all = allDepositsFlat();
+  const flat = all.filter(d => selectedMonth === 'all' || monthKey(d.ts) === selectedMonth);
 
-  const flat = allDepositsFlat().filter(d => selectedMonth === 'all' || monthKey(d.ts) === selectedMonth);
+  const totals = {};
+  flat.forEach(d => totals[d.name] = (totals[d.name] || 0) + d.amount);
+  const sorted = Object.entries(totals).map(([name, total]) => {
+    const ag = agents.find(a => a.name === name);
+    return { name, total, target: (ag && ag.target) || DEFAULT_TARGET };
+  }).sort((a,b)=> b.total - a.total);
 
-  const totalsByAgent = {};
-  flat.forEach(d => {
-    totalsByAgent[d.name] = (totalsByAgent[d.name] || 0) + d.amount;
-  });
-  const sorted = Object.entries(totalsByAgent)
-    .map(([name, total]) => {
-      const agent = agents.find(a => a.name === name);
-      return { name, total, target: (agent && agent.target) || DEFAULT_TARGET };
-    })
-    .sort((a,b)=> b.total - a.total);
+  document.getElementById('grandTotal').textContent = fmt(flat.reduce((s,d)=> s + d.amount, 0));
+  document.getElementById('grandTotalLabel').textContent = selectedMonth === 'all' ? 'Total on the board' : monthLabel(selectedMonth) + ' total';
+  document.getElementById('statToday').textContent = fmt(all.filter(d => dayKey(d.ts) === dayKey(Date.now())).reduce((s,d)=> s + d.amount, 0));
+  document.getElementById('statCount').textContent = flat.length.toLocaleString(LOCALE);
+  document.getElementById('statLargest').textContent = fmt(flat.reduce((m,d)=> Math.max(m, d.amount), 0));
+  document.getElementById('statTop').textContent = sorted.length ? sorted[0].name : '—';
 
-  const grand = flat.reduce((s,d)=> s + d.amount, 0);
-  document.getElementById('grandTotal').textContent = fmt(grand);
-  document.getElementById('grandTotalLabel').textContent =
-    selectedMonth === 'all' ? 'Total on the board' : monthLabel(selectedMonth) + ' total';
-
+  const podium = document.getElementById('podium');
   const board = document.getElementById('board');
   if(!sorted.length){
+    podium.innerHTML = '';
     board.innerHTML = '<div class="empty">No deposits logged for this period yet.</div>';
-    return;
+  } else {
+    podium.innerHTML = sorted.slice(0,3).map((a,i) => `
+      <div class="pod p${i+1}">
+        <div class="medal">${i+1}</div>
+        <div class="n">${escapeHtml(a.name)}</div>
+        <div class="a">${fmt(a.total)}</div>
+        <div class="pct">${Math.round(Math.min(100, a.total/a.target*100))}% of ${fmt(a.target)}</div>
+      </div>`).join('');
+    board.innerHTML = sorted.slice(3).map((a, j) => {
+      const i = j + 3;
+      const pct = Math.min(100, (a.total / a.target) * 100);
+      const over = a.total >= a.target;
+      return `
+        <div class="row">
+          <div class="rank">${i+1}</div>
+          <div class="info">
+            <div class="name">${escapeHtml(a.name)}</div>
+            <div class="barwrap"><div class="bar ${over?'over':''}" style="width:${Math.max(3, pct)}%"></div></div>
+            <div class="target-line">${Math.round(pct)}% of ${fmt(a.target)}${over ? ' · reached ✦' : ''}</div>
+          </div>
+          <div class="amt">${fmt(a.total)}</div>
+        </div>`;
+    }).join('');
   }
 
-  board.innerHTML = sorted.map((a, i) => {
-    const pct = Math.min(100, (a.total / a.target) * 100);
-    const over = a.total >= a.target;
-    return `
-      <div class="row">
-        <div class="rank">${i+1}</div>
-        <div class="info">
-          <div class="name">${escapeHtml(a.name)}</div>
-          <div class="barwrap"><div class="bar ${over ? 'over' : ''}" style="width:${Math.max(4, pct)}%"></div></div>
-          <div class="target-line">${fmt(a.total)} of ${fmt(a.target)} target${over ? ' — reached' : ''}</div>
+  // Dated log
+  const log = document.getElementById('log');
+  const list = [...flat].sort((x,y)=> y.ts - x.ts);
+  const firstLoad = seenIds === null;
+  const nowIds = new Set(all.map(d => d.id));
+  if(!list.length){
+    log.innerHTML = '<div class="empty">Nothing here yet.</div>';
+    document.getElementById('moreWrap').style.display = 'none';
+  } else {
+    const groups = [];
+    list.forEach(d => {
+      const k = dayKey(d.ts);
+      let g = groups[groups.length-1];
+      if(!g || g.key !== k){ g = { key:k, items:[], total:0 }; groups.push(g); }
+      g.items.push(d); g.total += d.amount;
+    });
+    document.getElementById('moreWrap').style.display = groups.length > daysShown ? 'flex' : 'none';
+    log.innerHTML = groups.slice(0, daysShown).map(g => `
+      <div class="day">
+        <div class="day-head">
+          <div class="d">${dayLabel(g.key)}</div>
+          <div class="t"><small>${g.items.length} deposit${g.items.length>1?'s':''}</small>${fmt(g.total)}</div>
         </div>
-        <div class="amt">${fmt(a.total)}</div>
-      </div>
-    `;
-  }).join('');
+        ${g.items.map(d => `
+          <div class="entry ${!firstLoad && !seenIds.has(d.id) ? 'new' : ''}">
+            <span class="time">${timeLabel(d.ts)}</span>
+            <span class="who">${escapeHtml(d.name)}</span>
+            <span class="amt">${fmt(d.amount)}</span>
+          </div>`).join('')}
+      </div>`).join('');
+  }
+  if(loadedOnce) seenIds = nowIds;
 }
 
-loadData(true);
-setInterval(() => loadData(false), 15000);
+document.getElementById('moreBtn').addEventListener('click', () => { daysShown += 10; render(); });
+loadData();
+setInterval(loadData, 15000);
 </script>
 </body>
 </html>
